@@ -25,13 +25,13 @@ action_space = 3
 transition_model = TransitionModel(state_space + action_space, 20, 8)
 posterior_model = PosteriorModel(state_space + action_space + observation_space, 20, 8)
 likelihood_model = LikelihoodModel(state_space, 20, 2)
-optimizer = optim.Adam(list(transition_model.parameters()) + list(posterior_model.parameters()) + list(likelihood_model.parameters()), lr=0.0001)
+optimizer = optim.Adam(list(transition_model.parameters()) + list(posterior_model.parameters()) + list(likelihood_model.parameters()), lr=0.01)
 
 #Collect data from random policy
 print("Collecting data...")
 env = gym.make('MountainCar-v0')
 observation, info = env.reset()
-eps = 800
+eps = 640
 data = []
 last_action = 1
 for i in range(eps):
@@ -58,11 +58,11 @@ posterior_model.train()
 likelihood_model.train()
 
 batch_size = 32
-epochs = 20
+epochs = 10
 
 #Train the models
 for j in range(epochs):
-    print("======EPOCH {}======".format(j))
+    print("======EPOCH {}======".format(j + 1))
 
     #Shuffle data using numpy
     np.random.shuffle(data)
@@ -96,12 +96,12 @@ for j in range(epochs):
             state = state_sample
 
         if i % batch_size == 0 and i != 0:
-            optimizer.zero_grad()
             loss = loss / batch_size
             loss.backward()
             optimizer.step()
             print(f"EPOCH {j+1}/{epochs} | {i // batch_size}/{len(data) // batch_size} | {loss.item()}")
             loss = torch.Tensor(1, 1).fill_(0.0)
+            optimizer.zero_grad()
 
 print("Evaluation...")
 
@@ -153,3 +153,4 @@ plt.plot(posterior, label="Posterior")
 plt.plot(prior, label="Prior")
 plt.legend()
 plt.savefig("results.png")
+plt.show()

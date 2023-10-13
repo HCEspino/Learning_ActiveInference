@@ -74,21 +74,17 @@ def sample(mean, log_std):
 
 
 def kl_divergence_gaussian(p_mean, p_logstd, q_mean, q_logstd):
+
     p_std = torch.exp(p_logstd)
     q_std = torch.exp(q_logstd)
 
-    squared_term = (p_std**2 / q_std**2) 
-    log_term = q_logstd - p_logstd
+    print(p_std, q_std)
 
-    kl_divergence = 0.5 * (squared_term + log_term - 1 + (q_mean - p_mean)**2 / (q_std**2))
-
-    kl = torch.sum(kl_divergence, dim=1)
-
-    return kl
+    return 0
 
 def log_likelihood(obs, mean, log_std):
     std = torch.exp(log_std)
-    log_likelihood = -0.5 * ((obs - mean) / std)**2 - 0.5 * log_std - 0.5 * math.log(2 * math.pi)
+    log_likelihood = -0.5 * torch.log(2*torch.tensor(torch.pi)) - 0.5 * torch.log(std**2) - ((1 / (2*std**2))*(obs - mean)**2)
     return log_likelihood
 
 def freeEnergy(theta_mean, theta_logstd, phi_mean, phi_logstd, eps_mean, eps_logstd, obs):
