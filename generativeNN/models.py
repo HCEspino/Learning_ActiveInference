@@ -78,9 +78,22 @@ def kl_divergence_gaussian(p_mean, p_logstd, q_mean, q_logstd):
     p_std = torch.exp(p_logstd)
     q_std = torch.exp(q_logstd)
 
-    print(p_std, q_std)
+    p_diag = torch.diag(p_std)
+    q_diag = torch.diag(q_std)
 
-    return 0
+    N = p_mean.shape[0]
+
+    p_diag_inv = torch.inverse(p_diag)
+    q_diag_inv = torch.inverse(q_diag)
+
+    diff = q_mean - p_mean
+
+
+    tf = torch.trace(q_diag_inv @ p_diag)
+    det = torch.log(torch.det(q_diag)/torch.det(p_diag))
+    quad = diff.T @ q_diag_inv @ diff
+
+    return 0.5 * (tf + det + quad - N)
 
 def log_likelihood(obs, mean, log_std):
     std = torch.exp(log_std)

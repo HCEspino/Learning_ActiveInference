@@ -31,7 +31,7 @@ optimizer = optim.Adam(list(transition_model.parameters()) + list(posterior_mode
 print("Collecting data...")
 env = gym.make('MountainCar-v0')
 observation, info = env.reset()
-eps = 640
+eps = 3200#640
 data = []
 last_action = 1
 for i in range(eps):
@@ -67,11 +67,11 @@ for j in range(epochs):
     #Shuffle data using numpy
     np.random.shuffle(data)
     optimizer.zero_grad()
+    loss = torch.Tensor(1, 1).fill_(0.0)
 
     for i in range(len(data)):
 
         state = torch.zeros(1, state_space)
-        loss = torch.Tensor(1, 1).fill_(0.0)
 
         #Pairs are (at-1, ot)
         for action, obs in data[i]:
@@ -90,7 +90,7 @@ for j in range(epochs):
             obs_sample = sample(likelihood_output[:, 0], likelihood_output[:, 1])
 
             #Calculate free energy
-            loss += freeEnergy(transition_output[:, :4], transition_output[:, 4:], posterior_output[:, :4], posterior_output[:, 4:], likelihood_output[:, 0], likelihood_output[:, 1], obs)
+            loss += freeEnergy(transition_output[:, :4].T, transition_output[:, 4:][0], posterior_output[:, :4].T, posterior_output[:, 4:][0], likelihood_output[:, 0], likelihood_output[:, 1], obs)
 
             #Update state
             state = state_sample
@@ -100,8 +100,8 @@ for j in range(epochs):
             loss.backward()
             optimizer.step()
             print(f"EPOCH {j+1}/{epochs} | {i // batch_size}/{len(data) // batch_size} | {loss.item()}")
-            loss = torch.Tensor(1, 1).fill_(0.0)
             optimizer.zero_grad()
+            loss = torch.Tensor(1, 1).fill_(0.0)
 
 print("Evaluation...")
 
