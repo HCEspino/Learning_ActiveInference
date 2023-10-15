@@ -38,7 +38,7 @@ action_space = 3
 transition_model = TransitionModel(state_space + action_space, 20, state_space*2).to(device)
 posterior_model = PosteriorModel(state_space + action_space + observation_space, 20, state_space*2).to(device)
 likelihood_model = LikelihoodModel(state_space, 20, observation_space*2).to(device)
-optimizer = optim.Adam(list(transition_model.parameters()) + list(posterior_model.parameters()) + list(likelihood_model.parameters()), lr=0.0001)
+optimizer = optim.Adam(list(transition_model.parameters()) + list(posterior_model.parameters()) + list(likelihood_model.parameters()), lr=0.001)
 nll = GaussianNLLLoss()
 
 
@@ -46,7 +46,7 @@ nll = GaussianNLLLoss()
 print("Collecting data...")
 env = gym.make('MountainCar-v0')
 observation, info = env.reset()
-eps = 8000
+eps = 320
 data = []
 last_action = 1
 for i in range(eps):
@@ -73,7 +73,7 @@ posterior_model.train()
 likelihood_model.train()
 
 batch_size = 32
-epochs = 20
+epochs = 15
 
 bk = False
 
@@ -187,9 +187,11 @@ for _ in range(200):
         observation, info = env.reset()
 env.close()
 
-torch.save(transition_model, "transition_model.pt")
-torch.save(posterior_model, "posterior_model.pt")
-torch.save(likelihood_model, "likelihood_model.pt")
+path = "test/"
+
+torch.save(transition_model, path + "transition_model.pt")
+torch.save(posterior_model, path + "posterior_model.pt")
+torch.save(likelihood_model, path + "likelihood_model.pt")
 
 #Plot
 plt.figure(figsize=(10, 5))
@@ -198,16 +200,16 @@ plt.plot(ground_truth, label="Ground Truth")
 plt.plot(posterior, label="Posterior")
 plt.plot(prior, label="Prior")
 plt.legend()
-plt.savefig("results.png")
+plt.savefig(path + "results.png")
 
 #Plot losses
 plt.figure(figsize=(10, 5))
 plt.plot(losses)
 plt.title("Loss")
-plt.savefig("losses.png")
+plt.savefig(path + "losses.png")
 
 #Plot differences
 plt.figure(figsize=(10, 5))
 plt.plot(diffs)
 plt.title("Likelihood sample vs observation difference")
-plt.savefig("diffs.png")
+plt.savefig(path + "diffs.png")
