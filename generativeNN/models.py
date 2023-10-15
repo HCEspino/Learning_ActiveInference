@@ -8,16 +8,16 @@ class TransitionModel(nn.Module):
         self.output_size = output_size
 
         self.layer1 = nn.Linear(input_size, hidden_size)
-        self.activ1 = nn.Tanh()
+        #self.activ1 = nn.Tanh()
         self.layer2 = nn.Linear(hidden_size, hidden_size)
-        self.activ2 = nn.Tanh()
+        #self.activ2 = nn.Tanh()
         self.layer3 = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
         x = self.layer1(x)
-        x = self.activ1(x)
+        #x = self.activ1(x)
         x = self.layer2(x)
-        x = self.activ2(x)
+        #x = self.activ2(x)
         x = self.layer3(x)
         return x
     
@@ -29,16 +29,16 @@ class PosteriorModel(nn.Module):
         self.output_size = output_size
 
         self.layer1 = nn.Linear(input_size, hidden_size)
-        self.activ1 = nn.Tanh()
+        #self.activ1 = nn.Tanh()
         self.layer2 = nn.Linear(hidden_size, hidden_size)
-        self.activ2 = nn.Tanh()
+        #self.activ2 = nn.Tanh()
         self.layer3 = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
         x = self.layer1(x)
-        x = self.activ1(x)
+        #x = self.activ1(x)
         x = self.layer2(x)
-        x = self.activ2(x)
+        #x = self.activ2(x)
         x = self.layer3(x)
         return x
     
@@ -51,15 +51,15 @@ class LikelihoodModel(nn.Module):
 
 
         self.layer1 = nn.Linear(input_size, hidden_size)
-        self.activ1 = nn.Tanh()
+        #self.activ1 = nn.Tanh()
         self.layer2 = nn.Linear(hidden_size, hidden_size)
-        self.activ2 = nn.Tanh()
+        #self.activ2 = nn.Tanh()
         self.layer3 = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
         x = self.layer1(x)
-        x = self.activ1(x)
+        #x = self.activ1(x)
         x = self.layer2(x)
-        x = self.activ2(x)
+        #x = self.activ2(x)
         x = self.layer3(x)
         return x
