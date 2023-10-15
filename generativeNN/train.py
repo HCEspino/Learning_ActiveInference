@@ -35,10 +35,10 @@ observation_space = 1
 action_space = 3
 
 #Define the models
-transition_model = TransitionModel(state_space + action_space, 20, 8).to(device)
-posterior_model = PosteriorModel(state_space + action_space + observation_space, 20, 8).to(device)
-likelihood_model = LikelihoodModel(state_space, 20, 2).to(device)
-optimizer = optim.Adam(list(transition_model.parameters()) + list(posterior_model.parameters()) + list(likelihood_model.parameters()), lr=0.001)
+transition_model = TransitionModel(state_space + action_space, 20, state_space*2).to(device)
+posterior_model = PosteriorModel(state_space + action_space + observation_space, 20, state_space*2).to(device)
+likelihood_model = LikelihoodModel(state_space, 20, observation_space*2).to(device)
+optimizer = optim.Adam(list(transition_model.parameters()) + list(posterior_model.parameters()) + list(likelihood_model.parameters()), lr=0.0001)
 nll = GaussianNLLLoss()
 
 
@@ -46,7 +46,7 @@ nll = GaussianNLLLoss()
 print("Collecting data...")
 env = gym.make('MountainCar-v0')
 observation, info = env.reset()
-eps = 320
+eps = 8000
 data = []
 last_action = 1
 for i in range(eps):
@@ -73,7 +73,7 @@ posterior_model.train()
 likelihood_model.train()
 
 batch_size = 32
-epochs = 25
+epochs = 20
 
 bk = False
 
