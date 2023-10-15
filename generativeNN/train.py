@@ -32,7 +32,7 @@ print("Using device: {}".format(device))
 #Action space is turn left, right, or do nothing
 state_space = 4
 observation_space = 1
-action_space = 3
+action_space = 2
 
 #Define the models
 transition_model = TransitionModel(state_space + action_space, 20, state_space*2).to(device)
@@ -48,7 +48,7 @@ env = gym.make('MountainCar-v0')
 observation, info = env.reset()
 eps = 320
 data = []
-last_action = 1
+last_action = int(np.random.choice([0, 2]))
 for i in range(eps):
     ep = []
     for _ in range(100):
@@ -56,7 +56,11 @@ for i in range(eps):
         last_action = action
 
         observation, reward, terminated, truncated, info = env.step(action)
-        one_hot_action = F.one_hot(torch.tensor(action), num_classes=3).view(1, 3)
+        if action == 0:
+            one_hot_action = torch.tensor([1, 0]).view(1, 2)
+        else:
+            one_hot_action = torch.tensor([0, 1]).view(1, 2)
+
         observation = torch.tensor(observation).view(1, 2)
         ep.append((one_hot_action, observation))
 
@@ -73,7 +77,7 @@ posterior_model.train()
 likelihood_model.train()
 
 batch_size = 32
-epochs = 15
+epochs = 10
 
 bk = False
 
@@ -93,7 +97,6 @@ for j in range(epochs):
         batch_indices = shuffled_indices[i:i + batch_size]
         optimizer.zero_grad()
         batch_loss = 0.0
-
         diff_total = 0.0
 
         #Process each episode in the batch
@@ -154,7 +157,11 @@ for _ in range(200):
     last_action = action
     observation, reward, terminated, truncated, info = env.step(action)
 
-    action = F.one_hot(torch.tensor(action), num_classes=3).view(1, 3)
+    if action == 0:
+        action = torch.tensor([1, 0]).view(1, 2)
+    else:
+        action = torch.tensor([0, 1]).view(1, 2)
+
     observation = torch.tensor(observation).view(1, 2)
     observation = observation[:, 0].unsqueeze(1)
 
