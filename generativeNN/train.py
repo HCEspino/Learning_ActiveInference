@@ -39,15 +39,6 @@ transition_model = TransitionModel(state_space + action_space, 20, state_space).
 posterior_model = PosteriorModel(state_space + action_space + observation_space, 20, state_space).to(device)
 likelihood_model = LikelihoodModel(state_space, 20, observation_space).to(device)
 optimizer = optim.Adam(list(transition_model.parameters()) + list(posterior_model.parameters()) + list(likelihood_model.parameters()), lr=0.001) #betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
-
-#Learning rate scheduler
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.1)
-
-#Beta annealing scheduler (0-1 for 5 epochs, then 1)
-betas = np.concatenate((np.linspace(0, 1, 7), np.ones(3)))
-
-
-
 nll = GaussianNLLLoss()
 
 
@@ -89,7 +80,10 @@ batch_size = 32
 epochs = 10
 
 losses = []
-diffs = []
+
+kl_term = []
+nll_term = []
+
 
 #Train the models
 for j in range(epochs):
@@ -104,7 +98,9 @@ for j in range(epochs):
         batch_indices = shuffled_indices[i:i + batch_size]
         optimizer.zero_grad()
         batch_loss = 0.0
-        diff_total = 0.0
+
+        kl_total = 0.0
+        nll_total = 0.0
 
         #Process each episode in the batch
         for idx in batch_indices:
@@ -134,10 +130,10 @@ for j in range(epochs):
                 likelihood_output = Normal(likelihood_mean, likelihood_var)
 
                 #Calculate free energy
-                batch_loss += (0.1 * kl_divergence(posterior_output, transition_output) + nll(likelihood_output.mean, obs, likelihood_output.variance))#likelihood_output.log_prob(obs)) nll(likelihood_output.mean, obs, likelihood_output.variance))#
+                batch_loss += (kl_divergence(posterior_output, transition_output) + nll(likelihood_output.mean, obs, likelihood_output.variance))#likelihood_output.log_prob(obs)) nll(likelihood_output.mean, obs, likelihood_output.variance))#
 
-                diff = abs(obs.item() - likelihood_output.sample().item())
-                diff_total += diff
+                kl_total += kl_divergence(posterior_output, transition_output)
+                nll_total += nll(likelihood_output.mean, obs, likelihood_output.variance)
 
                 #Update state
                 state = state_sample
@@ -148,9 +144,9 @@ for j in range(epochs):
         print(f"EPOCH {j+1}/{epochs} | {i // batch_size}/{len(data) // batch_size} | {batch_loss.item()}")
         batch_loss.backward()
         optimizer.step()
-        diffs.append(diff_total / len(batch_indices))
 
-    scheduler.step()
+        kl_term.append(kl_total / len(batch_indices))
+        nll_term.append(nll_total / len(batch_indices))
 
 print("Evaluation...")
 
@@ -229,6 +225,8 @@ plt.savefig("losses.png")
 
 #Plot differences
 plt.figure(figsize=(10, 5))
-plt.plot(diffs)
-plt.title("Likelihood sample vs observation difference")
+plt.plot(kl_term, label="KL")
+plt.plot(nll_term, label="NLL")
+plt.legend()
+plt.title("Loss terms")
 plt.savefig("diffs.png")
