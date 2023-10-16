@@ -13,7 +13,7 @@ from models import TransitionModel, PosteriorModel, LikelihoodModel
 def randomAgent(last_action):
    #10 percent chance of turning left or right
     if np.random.rand() < 0.1:
-        #Pick 0 or 2
+        #Pick 0 or 2S
         return int(np.random.choice([0, 2]))
     else:
         return last_action 
@@ -35,10 +35,10 @@ observation_space = 1
 action_space = 2
 
 #Define the models
-transition_model = TransitionModel(state_space + action_space, 20, state_space*2).to(device)
-posterior_model = PosteriorModel(state_space + action_space + observation_space, 20, state_space*2).to(device)
-likelihood_model = LikelihoodModel(state_space, 20, observation_space*2).to(device)
-optimizer = optim.Adam(list(transition_model.parameters()) + list(posterior_model.parameters()) + list(likelihood_model.parameters()), lr=0.001)
+transition_model = TransitionModel(state_space + action_space, 20, state_space).to(device)
+posterior_model = PosteriorModel(state_space + action_space + observation_space, 20, state_space).to(device)
+likelihood_model = LikelihoodModel(state_space, 20, observation_space).to(device)
+optimizer = optim.Adam(list(transition_model.parameters()) + list(posterior_model.parameters()) + list(likelihood_model.parameters()), lr=0.001) #betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
 nll = GaussianNLLLoss()
 
 
@@ -46,7 +46,7 @@ nll = GaussianNLLLoss()
 print("Collecting data...")
 env = gym.make('MountainCar-v0')
 observation, info = env.reset()
-eps = 320
+eps = 640#1600
 data = []
 last_action = int(np.random.choice([0, 2]))
 for i in range(eps):
@@ -79,8 +79,6 @@ likelihood_model.train()
 batch_size = 32
 epochs = 10
 
-bk = False
-
 losses = []
 diffs = []
 
@@ -105,25 +103,29 @@ for j in range(epochs):
 
             #Process each 100-step episode. Pairs are (at-1, ot)
             for action, obs in data[idx]:
-                obs = obs[:, 0].unsqueeze(1)
+
                 action = action.to(device)
+
+                obs = obs[:, 0].unsqueeze(1)
+                #Add random noise to obs
+                obs += torch.randn(obs.shape) * 0.1
                 obs = obs.to(device)
 
                 #Get Prior P(st | st-1, at-1)
-                transition_output = transition_model(torch.cat([state, action], dim=1).to(device))
-                transition_output = MultivariateNormal(transition_output[:, :state_space], torch.diag(torch.exp(transition_output[:, state_space:][0])))
+                transition_mean, transition_var = transition_model(torch.cat([state, action], dim=1).to(device))
+                transition_output = MultivariateNormal(transition_mean, torch.diag(transition_var[0]))
 
                 #and posterior Q(st | st-1, at-1, ot)
-                posterior_output = posterior_model(torch.cat([state, action, obs], dim=1).to(device))
-                posterior_output = MultivariateNormal(posterior_output[:, :state_space], torch.diag(torch.exp(posterior_output[:, state_space:][0])))
+                posterior_mean, posterior_var = posterior_model(torch.cat([state, action, obs], dim=1).to(device))
+                posterior_output = MultivariateNormal(posterior_mean, torch.diag(posterior_var[0]))
                 state_sample = posterior_output.sample()
 
                 #Sample prior and use to get likelihood of observation
-                likelihood_output = likelihood_model(state_sample)
-                likelihood_output = Normal(likelihood_output[:, 0], torch.exp(likelihood_output[:, 1]))
+                likelihood_mean, likelihood_var = likelihood_model(state_sample)
+                likelihood_output = Normal(likelihood_mean, likelihood_var)
 
                 #Calculate free energy
-                batch_loss += (kl_divergence(posterior_output, transition_output) + nll(likelihood_output.mean, obs, likelihood_output.variance))#likelihood_output.log_prob(obs))
+                batch_loss += (kl_divergence(posterior_output, transition_output) + nll(likelihood_output.mean, obs, likelihood_output.variance))#likelihood_output.log_prob(obs)) nll(likelihood_output.mean, obs, likelihood_output.variance))#
 
                 diff = abs(obs.item() - likelihood_output.sample().item())
                 diff_total += diff
@@ -165,23 +167,24 @@ for _ in range(200):
     observation = torch.tensor(observation).view(1, 2)
     observation = observation[:, 0].unsqueeze(1)
 
+
     #Sample from prior
-    transition_output = transition_model(torch.cat([state, action], dim=1))
-    transition_output = MultivariateNormal(transition_output[:, :state_space], torch.diag(torch.exp(transition_output[:, state_space:][0])))
+    transition_mean, transition_var = transition_model(torch.cat([state, action], dim=1).to(device))
+    transition_output = MultivariateNormal(transition_mean, torch.diag(transition_var[0]))
     prior_sample = transition_output.sample()
 
-    #Sample from posterior
-    posterior_output = posterior_model(torch.cat([state, action, observation], dim=1))
-    posterior_output = MultivariateNormal(posterior_output[:, :state_space], torch.diag(torch.exp(posterior_output[:, state_space:][0])))
+    #and posterior Q(st | st-1, at-1, ot)
+    posterior_mean, posterior_var = posterior_model(torch.cat([state, action, obs], dim=1).to(device))
+    posterior_output = MultivariateNormal(posterior_mean, torch.diag(posterior_var[0]))
     posterior_sample = posterior_output.sample()
 
     #Use states to predict observation
-    prior_obs = likelihood_model(prior_sample)
-    prior_obs = Normal(prior_obs[:, 0], torch.exp(prior_obs[:, 1]))
+    likelihood_mean, likelihood_var = likelihood_model(prior_sample)
+    prior_obs = Normal(likelihood_mean, likelihood_var)
     prior_obs = prior_obs.sample()
 
-    posterior_obs = likelihood_model(posterior_sample)
-    posterior_obs = Normal(posterior_obs[:, 0], torch.exp(posterior_obs[:, 1]))
+    posterior_mean, posterior_var = likelihood_model(posterior_sample)
+    posterior_obs = Normal(posterior_mean, posterior_var)
     posterior_obs = posterior_obs.sample()
 
     ground_truth.append(observation.item())
