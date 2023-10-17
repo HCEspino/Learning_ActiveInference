@@ -77,7 +77,7 @@ posterior_model.train()
 likelihood_model.train()
 
 batch_size = 32
-epochs = 10
+epochs = 5
 
 losses = []
 
@@ -132,8 +132,8 @@ for j in range(epochs):
                 #Calculate free energy
                 batch_loss += (kl_divergence(posterior_output, transition_output) + nll(likelihood_output.mean, obs, likelihood_output.variance))#likelihood_output.log_prob(obs)) nll(likelihood_output.mean, obs, likelihood_output.variance))#
 
-                kl_total += kl_divergence(posterior_output, transition_output)
-                nll_total += nll(likelihood_output.mean, obs, likelihood_output.variance)
+                kl_total += kl_divergence(posterior_output, transition_output).item()
+                nll_total += nll(likelihood_output.mean, obs, likelihood_output.variance).item()
 
                 #Update state
                 state = state_sample
