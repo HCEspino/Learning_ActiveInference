@@ -67,8 +67,6 @@ while(True):
 
     #Train on batch
     batch_loss = torch.tensor([0.0])
-    batch_kl = 0.0
-    batch_nll = 0.0
     optimizer.zero_grad()
     for i in range(len(data)):
         state = torch.zeros(state_space)
@@ -81,9 +79,6 @@ while(True):
             batch_loss += loss['loss']
 
             state = model.reparameterize(mu_po, logvar_po)
-
-            batch_kl += loss['KLD'].item()
-            batch_nll += loss['NLL'].item()
 
             #Detatch hidden states
             state.detach_()
