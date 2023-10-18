@@ -3,7 +3,7 @@ import gymnasium as gym
 import matplotlib.pyplot as plt
 from train import randomAgent, state_space
 
-model = torch.load("C:\\Users\\Harrison\\Documents\\GitHub\\Learning_ActiveInference\\MountainCar\\t1\\model.pt")
+model = torch.load("model.pt")
 
 
 print("Evaluation...")

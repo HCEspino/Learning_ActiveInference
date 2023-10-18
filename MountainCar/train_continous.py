@@ -33,7 +33,7 @@ env = gym.make('MountainCar-v0')
 
 
 model = GenerativeModel(state_space, action_space, observation_space)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001, amsgrad=True)
 batchnum = 1
 signal.signal(signal.SIGINT, handler)
 signal.signal(signal.SIGTERM, handler)
@@ -66,29 +66,30 @@ while(True):
         observation, info = env.reset()
 
     #Train on batch
-    batch_loss = torch.tensor([0.0])
-    optimizer.zero_grad()
+    batch_loss = 0.0
     for i in range(len(data)):
         state = torch.zeros(state_space)
+        episode_loss = torch.tensor([0.0])
         #Per step in episode
         for action, observation in data[i]:
 
             s_tr, s_po, mu_tr, logvar_tr, mu_po, logvar_po = model.forward(state, action, observation)
             loss = model.loss_function(s_tr, s_po, mu_tr, logvar_tr, mu_po, logvar_po, observation)
 
-            batch_loss += loss['loss']
+            episode_loss += loss['loss']
 
             state = model.reparameterize(mu_po, logvar_po)
 
             #Detatch hidden states
             state.detach_()
 
-    #Backpropagate
-    batch_loss /= eps
-    batch_loss.backward()
-    optimizer.step()
+        batch_loss += episode_loss.item()
+        episode_loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
 
-    print(f"Batch {batchnum} | Loss: {batch_loss.item()}")
+    batch_loss /= eps
+    print(f"Batch {batchnum} | Loss: {batch_loss}")
 
     if batchnum % 100 == 0:
         torch.save(model, f"chkpt{batchnum}.pt")
