@@ -5,7 +5,7 @@ from typing import List, Callable, Union, Any, TypeVar, Tuple
 from torch import Tensor
 
 class GenerativeModel(nn.Module):
-    def __init__(self, state_size, action_space, observation_space, hidden_size=20, neg_slope=0.1):
+    def __init__(self, state_size, action_space, observation_space, hidden_size=20, neg_slope=0.01):
         super(GenerativeModel, self).__init__()
         self.state_size = state_size
         self.action_space = action_space

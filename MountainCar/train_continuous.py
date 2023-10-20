@@ -30,7 +30,7 @@ observation_space = 1
 env = gym.make('MountainCarContinuous-v0')
 
 
-model = GenerativeModel(state_space, action_space, observation_space, neg_slope=0.1)
+model = GenerativeModel(state_space, action_space, observation_space, neg_slope=0.001)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 batchnum = 1
 signal.signal(signal.SIGINT, handler)
