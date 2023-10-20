@@ -1,31 +1,38 @@
 import torch
 import gymnasium as gym
 import matplotlib.pyplot as plt
-from train import randomAgent, state_space
+import numpy as np
+
+def randomAgent(last_action):
+   #10 percent chance of turning left or right
+    if np.random.rand() < 0.1:
+        #Pick 0 or 2S
+        return float(np.random.choice([-1.0, 1.0]))
+    else:
+        return last_action 
 
 model = torch.load("model.pt")
-
+state_space = 4
+action_space = 1
+observation_space = 1
 
 print("Evaluation...")
 
 #Evaluate ability to predict from state
-env = gym.make('MountainCar-v0')
+env = gym.make('MountainCarContinuous-v0')
 env._max_episode_steps = 200
 observation, info = env.reset()
-last_action = 1
+last_action = float(np.random.choice([-1.0, 1,0]))
 ground_truth = []
 posterior = []
 prior = []
 state = torch.zeros(state_space)
-for _ in range(100):
+for _ in range(200):
     action = randomAgent(last_action)
     last_action = action
-    observation, reward, terminated, truncated, info = env.step(action)
+    observation, reward, terminated, truncated, info = env.step([action])
 
-    if action == 0:
-        action = torch.tensor([1.0, 0.0]).view(2)
-    else:
-        action = torch.tensor([0.0, 1.0]).view(2)
+    action = torch.tensor([last_action]).view(1)
 
     observation = torch.tensor([observation[0]])
 
