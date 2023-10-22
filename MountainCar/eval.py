@@ -11,7 +11,7 @@ def randomAgent(last_action):
     else:
         return last_action 
 
-model = torch.load("bestmodel1/chkpt3500.pt")
+model = torch.load("chkpt4800.pt")
 state_space = 4
 action_space = 1
 observation_space = 1
